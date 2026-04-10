@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>בינגו מתמטי - כיתה ט׳</title>
+    <title>בינגו כיתתי - אלוני יצחק</title>
     <style>
         /* ===================== 1. Reset & Base ===================== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -75,7 +75,8 @@
         }
 
         .control-group select,
-        .control-group input[type="number"] {
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
             padding: 10px 14px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
@@ -87,7 +88,8 @@
         }
 
         .control-group select:focus,
-        .control-group input[type="number"]:focus {
+        .control-group input[type="number"]:focus,
+        .control-group input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -1234,21 +1236,66 @@
         .btn-draw.idle {
             animation: idle-pulse 2s ease-in-out infinite;
         }
+
+        /* ===================== 21. Welcome Banner ===================== */
+        .welcome-banner {
+            background: linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%);
+            border: 1px solid #ffe48a;
+            border-right: 5px solid #ffd200;
+            border-radius: 15px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .welcome-banner h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #7a5c00;
+            margin-bottom: 8px;
+        }
+
+        .welcome-banner p {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        .welcome-banner strong {
+            color: #7a5c00;
+        }
+
+        .welcome-banner-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            color: #aaa;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: color 0.2s, background 0.2s;
+            font-family: inherit;
+        }
+
     </style>
 </head>
 <body>
 
 <header>
     <div class="container">
-        <h1>🎯 בינגו מתמטי</h1>
-        <p>כיתה ט׳ - 4 יחידות לימוד</p>
+        <h1>🎯 בינגו כיתתי</h1>
+        <p>כלי משחק לכל המורים — אלוני יצחק</p>
     </div>
 </header>
 
 <nav class="tab-bar">
     <button class="tab-btn" data-tab="setup" onclick="showView('setup')">📋 הכנה</button>
     <button class="tab-btn" data-tab="game" onclick="showView('game')">🎮 משחק</button>
-    <button class="tab-btn" data-tab="admin" onclick="showView('admin')">⚙️ ניהול שאלות</button>
+    <button class="tab-btn" data-tab="admin" onclick="showView('admin')">⚙️ בנק שאלות</button>
 </nav>
 
 <div class="container">
@@ -1257,8 +1304,24 @@
     <div class="view" data-view="setup">
         <div class="main-content">
 
+            <!-- Welcome Banner -->
+            <div class="welcome-banner" id="welcomeBanner">
+                <button class="welcome-banner-close" onclick="dismissWelcomeBanner()" title="סגור">✕</button>
+                <h3>👋 ברוכים הבאים — בינגו כיתתי לכל המורים!</h3>
+                <p>
+                    בנק השאלות הנוכחי הוא <strong>דוגמה למתמטיקה כיתה ט׳ (4 יחל)</strong>.<br>
+                    רוצים להשתמש בנושא אחר? עברו ל-<strong>⚙️ בנק שאלות</strong> וטענו קובץ JSON/CSV משלכם,
+                    או השתמשו בכפתור 🤖 <strong>צור בנק עם AI</strong> לכל נושא ורמה.
+                </p>
+            </div>
+
             <!-- Controls Panel -->
             <div class="controls">
+                <div class="control-group">
+                    <label for="gameName">שם המשחק / נושא</label>
+                    <input type="text" id="gameName" placeholder="לדוגמה: מתמטיקה ט׳ – 4 יחל" maxlength="60">
+                </div>
+
                 <div class="control-group">
                     <label for="boardSize">גודל לוח</label>
                     <select id="boardSize">
@@ -1387,7 +1450,7 @@
                         <button class="btn btn-small btn-bank-load" onclick="document.getElementById('bankFileUpload').click()">📂 טען בנק שאלות</button>
                         <button class="btn btn-small btn-bank-save" onclick="saveQuestionBank()">💾 שמור כ-JSON</button>
                         <button class="btn btn-small btn-bank-save" onclick="saveQuestionBankCSV()">💾 שמור כ-CSV</button>
-                        <button class="btn btn-small btn-bank-reset btn-outline" onclick="resetQuestionBank()">🔄 אפס לברירת מחדל</button>
+                        <button class="btn btn-small btn-bank-reset btn-outline" onclick="resetQuestionBank()">🔄 טען דוגמה (כיתה ט׳ – 4 יחל)</button>
                         <button class="btn btn-small btn-bank-review" onclick="openQuestionPool()">📚 סקור שאלות</button>
                         <button class="btn btn-small btn-bank-ai" onclick="openAIPromptModal()" aria-label="צור בנק שאלות עם עוזר בינה מלאכותית">🤖 צור בנק עם AI</button>
                     </div>
@@ -1397,9 +1460,10 @@
 
             <!-- Format hint -->
             <div class="admin-hint">
+                <strong>📦 בנק ברירת מחדל:</strong> דוגמה למתמטיקה כיתה ט׳ (4 יחל) — כל מורה יכול לטעון בנק משלו.<br><br>
                 <strong>פורמט JSON:</strong> <code>[{"q":"שאלה","a":42,"cat":"קטגוריה"},...]</code><br>
                 ניתן לייצא מ-Excel / Sheets כ-CSV עם עמודות: question, answer, category.<br>
-                לקבלת בנק שאלות חדש, השתמש בכפתור 🤖 <strong>צור בנק עם AI</strong> ועקוב אחר ההוראות.
+                לקבלת בנק שאלות חדש לכל נושא, השתמש בכפתור 🤖 <strong>צור בנק עם AI</strong> ועקוב אחר ההוראות.
             </div>
 
         </div><!-- /.main-content -->
@@ -1744,7 +1808,9 @@
 
         const header = document.createElement('div');
         header.className = 'board-header';
-        header.textContent = '🎯 בינגו מתמטי - ' + playerLabel;
+        const rawGameName = (document.getElementById('gameName').value || '').trim();
+        const gameLabel = rawGameName ? rawGameName : 'בינגו';
+        header.textContent = gameLabel + ' - ' + playerLabel;
         boardEl.appendChild(header);
 
         const grid = document.createElement('div');
@@ -2140,10 +2206,10 @@
     }
 
     function resetQuestionBank() {
-        if (!confirm('האם לאפס את בנק השאלות לברירת המחדל? כל השינויים יאבדו.')) return;
+        if (!confirm('האם לטעון את בנק הדוגמה (מתמטיקה כיתה ט׳ – 4 יחל)? הבנק הנוכחי יאבד.')) return;
         questionBank = defaultQuestionBank.map(q => ({...q}));
         startNewGame();
-        alert('בנק השאלות אופס לברירת המחדל ✅');
+        alert('נטען בנק הדוגמה (מתמטיקה כיתה ט׳ – 4 יחל) ✅');
     }
 
     // ===================== AI Prompt Modal =====================
@@ -2166,7 +2232,7 @@
         const specialLine = special ? '\n- ' + special : '';
 
         const prompt =
-`You are a math teacher assistant. Create a question bank of ${count} math questions on the topic: "${topic}", suitable for ${grade} students at ${difficulty} difficulty level.
+`You are an educational game assistant. Create a question bank of ${count} questions on the topic: "${topic}", suitable for ${grade} students at ${difficulty} difficulty level.
 
 Rules:
 - Every question must have exactly one correct numeric answer (integer or simple decimal).
@@ -2311,6 +2377,13 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
             : '<li class="admin-cat-item">אין קטגוריות</li>';
     }
 
+    // ===================== Welcome Banner =====================
+    function dismissWelcomeBanner() {
+        const banner = document.getElementById('welcomeBanner');
+        if (banner) banner.style.display = 'none';
+        localStorage.setItem('welcomeDismissed', '1');
+    }
+
     // ===================== Initialization =====================
     window.onload = () => {
         startNewGame(false);
@@ -2318,6 +2391,11 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
         document.getElementById('studentNames').addEventListener('input', updateStudentsCountBadge);
         updateStudentsCountBadge();
         updateBankBadge();
+        // Hide welcome banner if previously dismissed
+        if (localStorage.getItem('welcomeDismissed') === '1') {
+            const banner = document.getElementById('welcomeBanner');
+            if (banner) banner.style.display = 'none';
+        }
     };
 </script>
 
@@ -2366,13 +2444,13 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
 <div id="aiPromptModal" class="modal hidden" onclick="closeAIPromptModal(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h2>🤖 יצירת בנק שאלות עם AI</h2>
+            <h2>🤖 צור בנק שאלות לכל נושא עם AI</h2>
             <button class="modal-close" onclick="closeAIPromptModal()" aria-label="סגור חלון">✕ סגור</button>
         </div>
         <div class="modal-body">
 
             <!-- Step 1: Guided form -->
-            <div class="ai-section-title">שלב 1 — תאר את בנק השאלות הרצוי</div>
+            <div class="ai-section-title">שלב 1 — תאר את בנק השאלות הרצוי (עובד לכל נושא ורמה!)</div>
             <div class="ai-form-grid">
                 <div class="ai-form-field">
                     <label>📚 נושא / פרק (מה אתה מלמד?)</label>

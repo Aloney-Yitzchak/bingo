@@ -1269,7 +1269,7 @@
         .welcome-banner-close {
             position: absolute;
             top: 10px;
-            left: 12px;
+            right: 12px;
             background: none;
             border: none;
             font-size: 1.1em;
@@ -1809,7 +1809,7 @@
         const header = document.createElement('div');
         header.className = 'board-header';
         const rawGameName = (document.getElementById('gameName').value || '').trim();
-        const gameLabel = rawGameName ? rawGameName : '🎯 בינגו';
+        const gameLabel = rawGameName ? rawGameName : 'בינגו';
         header.textContent = gameLabel + ' - ' + playerLabel;
         boardEl.appendChild(header);
 

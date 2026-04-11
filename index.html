@@ -1542,6 +1542,9 @@
         { q: "חשב: 9²", a: 81, cat: "מתמטיקה כללית" }
     ];
 
+    // Normalize all answer values to strings for consistent handling
+    questionBank.forEach(q => { q.a = String(q.a); });
+
     const defaultQuestionBank = questionBank.map(q => ({...q}));
 
     // ===================== Emoji Sets =====================
@@ -2144,7 +2147,7 @@
                     const cols = splitCsvRow(lines[0]);
                     const firstColIsKnownHeader = cols.length >= 1 && /^(question|q|שאלה)$/i.test(cols[0].trim());
                     const secondColIsKnownHeader = cols.length >= 2 && /^(answer|a|תשובה)$/i.test(cols[1].trim());
-                    if (firstColIsKnownHeader || secondColIsKnownHeader) startIdx = 1;
+                    if (firstColIsKnownHeader && secondColIsKnownHeader) startIdx = 1;
                 }
                 for (let i = startIdx; i < lines.length; i++) {
                     const cols = splitCsvRow(lines[i]);

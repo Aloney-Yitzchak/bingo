@@ -404,7 +404,13 @@
             color: #333;
             direction: ltr;
             padding: 10px 5px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            text-align: center;
         }
+
+        .board-cell.answer-medium { font-size: 1.1em; }
+        .board-cell.answer-long   { font-size: 0.85em; font-weight: 600; }
 
         .board-cell.free-space {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1337,11 +1343,10 @@
                 </div>
 
                 <div class="control-group">
-                    <label>טווח תשובות</label>
-                    <div class="range-group">
-                        <input type="number" id="minAnswer" value="-10" placeholder="מינימום">
-                        <input type="number" id="maxAnswer" value="100" placeholder="מקסימום">
-                    </div>
+                    <label for="boardCategory">סנן לפי קטגוריה</label>
+                    <select id="boardCategory">
+                        <option value="">כל הקטגוריות</option>
+                    </select>
                 </div>
 
                 <div class="control-group">
@@ -1537,6 +1542,9 @@
         { q: "חשב: 9²", a: 81, cat: "מתמטיקה כללית" }
     ];
 
+    // Normalize all answer values to strings for consistent handling
+    questionBank.forEach(q => { q.a = String(q.a); });
+
     const defaultQuestionBank = questionBank.map(q => ({...q}));
 
     // ===================== Emoji Sets =====================
@@ -1722,8 +1730,6 @@
         printBoards.classList.remove('print-1up', 'print-2up');
 
         const boardSize = parseInt(document.getElementById('boardSize').value);
-        const minAnswer = parseInt(document.getElementById('minAnswer').value);
-        const maxAnswer = parseInt(document.getElementById('maxAnswer').value);
 
         // Determine player labels (names or numbers)
         const names = getStudentNames();
@@ -1749,20 +1755,17 @@
             playerLabels = Array.from({ length: numPlayers }, (_, i) => 'תלמיד ' + (i + 1));
         }
 
-        // Validate range
-        if (isNaN(minAnswer) || isNaN(maxAnswer) || minAnswer >= maxAnswer) {
-            alert('טווח תשובות לא תקין: מינימום חייב להיות קטן ממקסימום');
-            return;
-        }
-
-        // Filter questions by answer range
-        const filtered = questionBank.filter(q => q.a >= minAnswer && q.a <= maxAnswer);
-        const uniqueAnswers = [...new Set(filtered.map(q => q.a))];
+        // Filter questions by selected category (if any)
+        const selectedCat = document.getElementById('boardCategory').value;
+        const filtered = selectedCat
+            ? questionBank.filter(q => q.cat === selectedCat)
+            : questionBank;
+        const uniqueAnswers = [...new Set(filtered.map(q => String(q.a)))];
         const hasFreeSpace = boardSize % 2 !== 0;
         const required = boardSize * boardSize - (hasFreeSpace ? 1 : 0);
 
         if (uniqueAnswers.length < required) {
-            alert('אין מספיק תשובות בטווח שנבחר! נמצאו ' + uniqueAnswers.length + ' תשובות, נדרשות ' + required + '. הרחב את הטווח או הקטן את גודל הלוח.');
+            alert('אין מספיק תשובות! נמצאו ' + uniqueAnswers.length + ' תשובות, נדרשות ' + required + '. הוסף שאלות או הקטן את גודל הלוח.');
             return;
         }
 
@@ -1829,7 +1832,11 @@
                 cell.classList.add('free-space');
                 cell.textContent = '⭐ חינם';
             } else {
-                cell.textContent = selected[answerIdx++];
+                const val = String(selected[answerIdx++]);
+                cell.textContent = val;
+                cell.title = val;
+                if (val.length > 8) cell.classList.add('answer-long');
+                else if (val.length > 4) cell.classList.add('answer-medium');
             }
 
             grid.appendChild(cell);
@@ -1925,6 +1932,21 @@
         if (badge) badge.textContent = questionBank.length + ' שאלות';
         const adminView = document.querySelector('.view[data-view="admin"]');
         if (adminView && adminView.classList.contains('active')) updateAdminSummary();
+
+        // Refresh setup-view category filter
+        const boardCatSel = document.getElementById('boardCategory');
+        if (boardCatSel) {
+            const prevVal = boardCatSel.value;
+            const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
+            boardCatSel.innerHTML = '<option value="">כל הקטגוריות</option>';
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                if (c === prevVal) opt.selected = true;
+                boardCatSel.appendChild(opt);
+            });
+        }
     }
 
     function openQuestionPool() {
@@ -2026,7 +2048,7 @@
                 '<select id="editCat">' + catOptions + '<option value="__new__">+ קטגוריה חדשה...</option></select>' +
                 '<input type="text" id="editCatNew" placeholder="שם קטגוריה חדשה" style="display:none;margin-top:4px">' +
             '</td>' +
-            '<td><input type="number" id="editA" value="' + item.a + '" style="width:80px"></td>' +
+            '<td><input type="text" id="editA" value="' + escHtml(String(item.a)) + '" style="width:120px"></td>' +
             '<td colspan="2"><div class="pool-action-btns">' +
                 '<button class="btn btn-small btn-primary" onclick="saveEditQuestion(' + idx + ')">💾 שמור</button>' +
                 '<button class="btn btn-small btn-outline" onclick="renderQuestionPool()">ביטול</button>' +
@@ -2039,14 +2061,14 @@
 
     function saveEditQuestion(idx) {
         const q = document.getElementById('editQ').value.trim();
-        const a = parseFloat(document.getElementById('editA').value);
+        const a = document.getElementById('editA').value.trim();
         let cat = document.getElementById('editCat').value;
         if (cat === '__new__') {
             cat = (document.getElementById('editCatNew').value || '').trim();
             if (!cat) { alert('הזן שם לקטגוריה החדשה'); return; }
         }
         if (!q) { alert('שאלה לא יכולה להיות ריקה'); return; }
-        if (isNaN(a)) { alert('תשובה חייבת להיות מספר'); return; }
+        if (!a) { alert('תשובה לא יכולה להיות ריקה'); return; }
 
         const oldQ = questionBank[idx].q;
         questionBank[idx] = { q, a, cat: cat || questionBank[idx].cat || '' };
@@ -2068,7 +2090,7 @@
     }
 
     function addQuestion() {
-        questionBank.push({ q: '', a: 0, cat: '' });
+        questionBank.push({ q: '', a: '', cat: '' });
         updateBankBadge();
         const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
         const sel = document.getElementById('poolFilterCat');
@@ -2109,9 +2131,10 @@
                         errors.push('רשומה ' + (i + 1) + ': שאלה חסרה');
                         return;
                     }
-                    const a = parseFloat(item.a !== undefined ? item.a : item.answer);
-                    if (isNaN(a)) {
-                        errors.push('רשומה ' + (i + 1) + ': תשובה לא מספרית');
+                    const rawA = item.a !== undefined ? item.a : item.answer;
+                    const a = String(rawA !== undefined && rawA !== null ? rawA : '').trim();
+                    if (!a) {
+                        errors.push('רשומה ' + (i + 1) + ': תשובה ריקה');
                         return;
                     }
                     valid.push({ q: item.q.trim(), a, cat: String(item.cat || item.category || '').trim() });
@@ -2122,18 +2145,18 @@
                 let startIdx = 0;
                 if (lines.length > 0) {
                     const cols = splitCsvRow(lines[0]);
-                    const secondColNonNumeric = cols.length >= 2 && isNaN(parseFloat(cols[1]));
                     const firstColIsKnownHeader = cols.length >= 1 && /^(question|q|שאלה)$/i.test(cols[0].trim());
-                    if (secondColNonNumeric || firstColIsKnownHeader) startIdx = 1;
+                    const secondColIsKnownHeader = cols.length >= 2 && /^(answer|a|תשובה)$/i.test(cols[1].trim());
+                    if (firstColIsKnownHeader && secondColIsKnownHeader) startIdx = 1;
                 }
                 for (let i = startIdx; i < lines.length; i++) {
                     const cols = splitCsvRow(lines[i]);
                     if (cols.length < 2) { errors.push('שורה ' + (i + 1) + ': חסרות עמודות'); continue; }
                     const q = cols[0].trim();
-                    const a = parseFloat(cols[1]);
+                    const a = cols[1].trim();
                     const cat = cols[2] ? cols[2].trim() : '';
                     if (!q) { errors.push('שורה ' + (i + 1) + ': שאלה ריקה'); continue; }
-                    if (isNaN(a)) { errors.push('שורה ' + (i + 1) + ': תשובה לא מספרית'); continue; }
+                    if (!a) { errors.push('שורה ' + (i + 1) + ': תשובה ריקה'); continue; }
                     parsed.push({ q, a, cat });
                 }
             } else {
@@ -2187,8 +2210,9 @@
         const header = 'question,answer,category';
         const rows = questionBank.map(item => {
             const q = '"' + String(item.q).replace(/"/g, '""') + '"';
+            const a = '"' + String(item.a).replace(/"/g, '""') + '"';
             const cat = '"' + String(item.cat || '').replace(/"/g, '""') + '"';
-            return q + ',' + item.a + ',' + cat;
+            return q + ',' + a + ',' + cat;
         });
         const csv = [header, ...rows].join('\n');
         downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'question-bank.csv');
@@ -2235,15 +2259,15 @@
 `You are an educational game assistant. Create a question bank of ${count} questions on the topic: "${topic}", suitable for ${grade} students at ${difficulty} difficulty level.
 
 Rules:
-- Every question must have exactly one correct numeric answer (integer or simple decimal).
+- Every question must have exactly one correct, concise answer. The answer may be a number, fraction, expression, or short text (up to a few words).
 - Questions should be concise (1–2 lines).
 - Cover different aspects and sub-topics of "${topic}".
 - Do not repeat the same question twice.${specialLine}
 
 Output ONLY a valid JSON array in this exact format, with no extra text, explanation, or markdown code fences:
 [
-  { "q": "Question text here", "a": 42, "cat": "${topic}" },
-  { "q": "Another question", "a": 7, "cat": "${topic}" }
+  { "q": "Question text here", "a": "42", "cat": "${topic}" },
+  { "q": "Another question", "a": "1/2", "cat": "${topic}" }
 ]`;
 
         const output = document.getElementById('aiPromptOutput');
@@ -2301,9 +2325,10 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
                 return;
             }
             // accept both 'a' and 'answer', and both 'cat' and 'category', to match loadQuestionBank behaviour
-            const a = parseFloat(item.a !== undefined ? item.a : item.answer);
-            if (isNaN(a)) {
-                errors.push('רשומה ' + (i + 1) + ': תשובה לא מספרית');
+            const rawA = item.a !== undefined ? item.a : item.answer;
+            const a = String(rawA !== undefined && rawA !== null ? rawA : '').trim();
+            if (!a) {
+                errors.push('רשומה ' + (i + 1) + ': תשובה ריקה');
                 return;
             }
             valid.push({ q: item.q.trim(), a, cat: String(item.cat || item.category || '').trim() });

@@ -1915,7 +1915,7 @@
         }
 
         if (questionBankSettings.categoryOrder.length === 0) {
-            element.textContent = 'סדר קטגוריות פעיל, אך טרם נבחר סדר — כרגע כל השאלות אקראיות';
+            element.textContent = 'סדר קטגוריות מופעל, אך עדיין לא הוגדר סדר — עד להגדרה כל השאלות אקראיות';
             return;
         }
 
@@ -2004,7 +2004,14 @@
 
         const candidates = getDrawCandidates();
         if (candidates.length === 0) {
-            alert('לא נמצאו שאלות מתאימות להגרלה. בדוק את סדר הקטגוריות או התחל משחק חדש.');
+            const hasRemainingOrderedCategories = questionBankSettings.categoryOrder.some(category =>
+                currentGame.questions.some(question => normalizeCategoryName(question.cat) === category)
+            );
+            alert(
+                hasRemainingOrderedCategories
+                    ? 'לא נמצאו שאלות מתאימות להגרלה לפי הסדר שהוגדר. בדוק את סדר הקטגוריות.'
+                    : 'לא נותרו שאלות מתאימות להגרלה. אפשר להתחיל משחק חדש או לעדכן את סדר הקטגוריות.'
+            );
             updateGameCategoryStatus();
             return;
         }

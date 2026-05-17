@@ -2000,6 +2000,11 @@
         }
 
         const candidates = getDrawCandidates();
+        if (candidates.length === 0) {
+            alert('לא נמצאו שאלות מתאימות להגרלה. בדוק את סדר הקטגוריות או התחל משחק חדש.');
+            updateGameCategoryStatus();
+            return;
+        }
         const selectedQuestion = candidates[Math.floor(Math.random() * candidates.length)];
         const idx = currentGame.questions.indexOf(selectedQuestion);
         currentGame.currentQuestion = currentGame.questions.splice(idx, 1)[0];

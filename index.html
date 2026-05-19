@@ -1205,6 +1205,134 @@
             font-size: 0.95em;
         }
 
+        .bank-config-card {
+            padding: 20px;
+            background: #f8f9ff;
+            border: 1px solid #e0e8ff;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .bank-config-card h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .bank-config-card p {
+            font-size: 0.88em;
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        .bank-config-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px 14px;
+            border: 1px solid #d9e2ff;
+            border-radius: 12px;
+            background: white;
+            margin-bottom: 14px;
+        }
+
+        .bank-config-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .bank-config-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .bank-config-status {
+            font-size: 0.84em;
+            font-weight: 700;
+            color: #667eea;
+            background: #eef2ff;
+            border-radius: 999px;
+            padding: 5px 10px;
+        }
+
+        .bank-order-editor {
+            display: grid;
+            gap: 10px;
+        }
+
+        .bank-order-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: white;
+            border: 1px solid #e0e8ff;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .bank-order-row--inactive {
+            opacity: 0.78;
+            background: #fbfbff;
+        }
+
+        .bank-order-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .bank-order-name {
+            font-weight: 700;
+            color: #444;
+        }
+
+        .bank-order-meta {
+            font-size: 0.82em;
+            color: #777;
+        }
+
+        .bank-order-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .bank-order-empty {
+            background: white;
+            border: 1px dashed #c8d4ff;
+            border-radius: 12px;
+            padding: 16px;
+            color: #777;
+            font-size: 0.88em;
+        }
+
+        .game-category-status {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .game-category-pill {
+            background: #f8f9ff;
+            border: 1px solid #dce4ff;
+            border-radius: 999px;
+            padding: 10px 18px;
+            color: #555;
+            font-size: 0.92em;
+            font-weight: 600;
+            text-align: center;
+        }
+
         /* ===================== 20. Game View extras ===================== */
         .game-back-link {
             display: flex;
@@ -1410,6 +1538,10 @@
                 <button class="btn btn-reveal" onclick="revealAnswer()">👁️ הצג תשובה</button>
             </div>
 
+            <div class="game-category-status">
+                <div class="game-category-pill" id="gameCategoryStatus">מצב הגרלה: אקראי מכל הקטגוריות</div>
+            </div>
+
             <hr class="divider">
 
             <!-- Statistics Panel -->
@@ -1447,6 +1579,21 @@
                 </ul>
             </div>
 
+            <div class="bank-config-card">
+                <h3>🎛️ סדר קטגוריות במשחק</h3>
+                <p>כאשר המצב פעיל, המשחק מתקדם לפי סדר הקטגוריות שבחרת. שאלות מקטגוריות שלא הוכנסו לסדר ימשיכו להופיע באקראי לאורך המשחק.</p>
+                <div class="bank-config-toggle">
+                    <label>
+                        <input type="checkbox" id="orderedCategoriesEnabled" onchange="toggleOrderedCategories(this.checked)">
+                        הפעל סדר קטגוריות בזמן המשחק
+                    </label>
+                    <span class="bank-config-status" id="bankConfigStatus">מצב אקראי מלא</span>
+                </div>
+                <div class="bank-order-editor" id="bankOrderEditor">
+                    <div class="bank-order-empty">טוען קטגוריות...</div>
+                </div>
+            </div>
+
             <!-- Question Bank Panel -->
             <div class="bank-panel">
                 <div class="bank-panel-header">
@@ -1466,8 +1613,9 @@
             <!-- Format hint -->
             <div class="admin-hint">
                 <strong>📦 בנק ברירת מחדל:</strong> דוגמה למתמטיקה כיתה ט׳ (4 יחל) — כל מורה יכול לטעון בנק משלו.<br><br>
-                <strong>פורמט JSON:</strong> <code>[{"q":"שאלה","a":42,"cat":"קטגוריה"},...]</code><br>
-                ניתן לייצא מ-Excel / Sheets כ-CSV עם עמודות: question, answer, category.<br>
+                <strong>פורמט JSON חדש:</strong> <code>{"questions":[{"q":"שאלה","a":"42","cat":"קטגוריה"}],"settings":{"orderedCategoriesEnabled":true,"categoryOrder":["קטגוריה א׳","קטגוריה ב׳"]}}</code><br>
+                <strong>תאימות לאחור:</strong> גם JSON ישן כמערך שאלות בלבד וגם CSV ישן עם <code>question,answer,category</code> עדיין נתמכים.<br>
+                <strong>CSV מלא:</strong> בייצוא החדש יתווסף בראש הקובץ אזור הגדרות עם <code>orderedCategoriesEnabled</code> ו-<code>categoryOrder</code>, ולאחריו טבלת השאלות הרגילה.<br>
                 לקבלת בנק שאלות חדש לכל נושא, השתמש בכפתור 🤖 <strong>צור בנק עם AI</strong> ועקוב אחר ההוראות.
             </div>
 
@@ -1542,10 +1690,255 @@
         { q: "חשב: 9²", a: 81, cat: "מתמטיקה כללית" }
     ];
 
-    // Normalize all answer values to strings for consistent handling
-    questionBank.forEach(q => { q.a = String(q.a); });
+    function normalizeCategoryName(value) {
+        return String(value || '').trim();
+    }
 
+    function sanitizeCategoryOrder(order) {
+        const seen = new Set();
+        return (Array.isArray(order) ? order : [])
+            .map(normalizeCategoryName)
+            .filter(cat => {
+                if (!cat || seen.has(cat)) return false;
+                seen.add(cat);
+                return true;
+            });
+    }
+
+    function createDefaultQuestionBankSettings() {
+        return {
+            orderedCategoriesEnabled: false,
+            categoryOrder: []
+        };
+    }
+
+    function cloneQuestionBankSettings(settings) {
+        return {
+            orderedCategoriesEnabled: Boolean(settings && settings.orderedCategoriesEnabled),
+            categoryOrder: sanitizeCategoryOrder(settings && settings.categoryOrder)
+        };
+    }
+
+    function normalizeQuestionRecord(item, index, errors, labelPrefix = 'רשומה ') {
+        if (!item || typeof item.q !== 'string' || !item.q.trim()) {
+            errors.push(labelPrefix + (index + 1) + ': שאלה חסרה');
+            return null;
+        }
+
+        const rawA = item.a !== undefined ? item.a : item.answer;
+        const a = String(rawA !== undefined && rawA !== null ? rawA : '').trim();
+        if (!a) {
+            errors.push(labelPrefix + (index + 1) + ': תשובה ריקה');
+            return null;
+        }
+
+        return {
+            q: item.q.trim(),
+            a,
+            cat: normalizeCategoryName(item.cat !== undefined ? item.cat : item.category)
+        };
+    }
+
+    function normalizeQuestionBankSettings(settings) {
+        return cloneQuestionBankSettings(settings || createDefaultQuestionBankSettings());
+    }
+
+    function normalizeQuestionBankPayload(questions, settings, errors, labelPrefix) {
+        const valid = [];
+        (Array.isArray(questions) ? questions : []).forEach((item, index) => {
+            const normalized = normalizeQuestionRecord(item, index, errors, labelPrefix);
+            if (normalized) valid.push(normalized);
+        });
+        return {
+            questions: valid,
+            settings: normalizeQuestionBankSettings(settings)
+        };
+    }
+
+    function parseQuestionBankJsonText(text) {
+        let parsed;
+        try {
+            parsed = JSON.parse(String(text || '').replace(/^\uFEFF/, ''));
+        } catch (err) {
+            throw new Error('שגיאה בקריאת קובץ JSON: ' + err.message);
+        }
+
+        let questions;
+        let settings = createDefaultQuestionBankSettings();
+        let hasExplicitSettings = false;
+        if (Array.isArray(parsed)) {
+            questions = parsed;
+        } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.questions)) {
+            questions = parsed.questions;
+            settings = parsed.settings || parsed.config || createDefaultQuestionBankSettings();
+            hasExplicitSettings = Boolean(parsed.settings || parsed.config);
+        } else {
+            throw new Error('הקובץ חייב להיות מערך שאלות או אובייקט עם questions');
+        }
+
+        const errors = [];
+        return {
+            ...normalizeQuestionBankPayload(questions, settings, errors, 'רשומה '),
+            errors,
+            hasExplicitSettings
+        };
+    }
+
+    function isQuestionHeaderRow(cols) {
+        const first = (cols[0] || '').trim();
+        const second = (cols[1] || '').trim();
+        return /^(question|q|שאלה)$/i.test(first) && /^(answer|a|תשובה)$/i.test(second);
+    }
+
+    function parseBooleanSetting(value) {
+        const normalized = String(value || '').trim().toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+        if (['false', '0', 'no', 'off', ''].includes(normalized)) return false;
+        return false;
+    }
+
+    function parseQuestionBankCsvText(text) {
+        const lines = String(text || '').replace(/^\uFEFF/, '')
+            .split(/\r?\n/)
+            .map(line => line.replace(/\r/g, ''));
+        const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+        const errors = [];
+        const parsed = [];
+        const settings = createDefaultQuestionBankSettings();
+
+        let index = 0;
+        const firstLine = (nonEmptyLines[0] || '').trim();
+        const hasSettingsSection = /^#\s*bingo-settings/i.test(firstLine) ||
+            /^setting\s*,\s*value$/i.test(firstLine);
+
+        if (hasSettingsSection) {
+            if (/^#\s*bingo-settings/i.test(firstLine)) index++;
+            if (nonEmptyLines[index] && /^setting\s*,\s*value$/i.test(nonEmptyLines[index].trim())) index++;
+
+            for (; index < nonEmptyLines.length; index++) {
+                const cols = splitCsvRow(nonEmptyLines[index]);
+                const key = normalizeCategoryName(cols[0]);
+                if (isQuestionHeaderRow(cols)) break;
+                if (!key || key.startsWith('#')) continue;
+                if (/^orderedCategoriesEnabled$/i.test(key)) {
+                    settings.orderedCategoriesEnabled = parseBooleanSetting(cols[1]);
+                } else if (/^categoryOrder$/i.test(key)) {
+                    const cat = normalizeCategoryName(cols[1]);
+                    if (cat) settings.categoryOrder.push(cat);
+                }
+            }
+        }
+
+        if (index < nonEmptyLines.length && isQuestionHeaderRow(splitCsvRow(nonEmptyLines[index]))) {
+            index++;
+        }
+
+        for (; index < nonEmptyLines.length; index++) {
+            const cols = splitCsvRow(nonEmptyLines[index]);
+            if (cols.length < 2) {
+                errors.push('שורה ' + (index + 1) + ': חסרות עמודות');
+                continue;
+            }
+            const normalized = normalizeQuestionRecord(
+                { q: cols[0], a: cols[1], cat: cols[2] || '' },
+                index,
+                errors,
+                'שורה '
+            );
+            if (normalized) parsed.push(normalized);
+        }
+
+        return {
+            questions: parsed,
+            settings: normalizeQuestionBankSettings(settings),
+            errors
+        };
+    }
+
+    function applyQuestionBankData(data) {
+        questionBank = data.questions.map(item => ({ ...item }));
+        questionBankSettings = cloneQuestionBankSettings(data.settings);
+        syncQuestionBankSettings();
+    }
+
+    function syncQuestionBankSettings() {
+        questionBankSettings = cloneQuestionBankSettings(questionBankSettings);
+        updateBankBadge();
+        updateGameCategoryStatus();
+        renderCategoryOrderEditor();
+    }
+
+    function getQuestionBankCategories() {
+        return [...new Set(questionBank.map(q => normalizeCategoryName(q.cat)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he'));
+    }
+
+    function getQuestionBankCategoryCounts() {
+        const counts = {};
+        questionBank.forEach(q => {
+            const cat = normalizeCategoryName(q.cat) || 'ללא קטגוריה';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        return counts;
+    }
+
+    function getActiveConfiguredCategory(questions = currentGame.questions) {
+        if (!questionBankSettings.orderedCategoriesEnabled) return '';
+        return questionBankSettings.categoryOrder.find(cat =>
+            questions.some(question => normalizeCategoryName(question.cat) === cat)
+        ) || '';
+    }
+
+    function getDrawCandidates() {
+        if (!questionBankSettings.orderedCategoriesEnabled) {
+            return currentGame.questions;
+        }
+
+        const activeCategory = getActiveConfiguredCategory(currentGame.questions);
+        if (!activeCategory) {
+            return currentGame.questions;
+        }
+
+        const configuredCategories = new Set(questionBankSettings.categoryOrder);
+        return currentGame.questions.filter(question => {
+            const questionCategory = normalizeCategoryName(question.cat);
+            return questionCategory === activeCategory || !configuredCategories.has(questionCategory);
+        });
+    }
+
+    function updateGameCategoryStatus() {
+        const element = document.getElementById('gameCategoryStatus');
+        if (!element) return;
+
+        if (!questionBankSettings.orderedCategoriesEnabled) {
+            element.textContent = 'מצב הגרלה: אקראי מכל הקטגוריות';
+            return;
+        }
+
+        if (questionBankSettings.categoryOrder.length === 0) {
+            element.textContent = 'סדר קטגוריות מופעל, אך עדיין לא הוגדר סדר — עד להגדרה כל השאלות אקראיות';
+            return;
+        }
+
+        const activeCategory = getActiveConfiguredCategory(currentGame.questions);
+        if (activeCategory) {
+            element.textContent = 'קטגוריה פעילה: ' + activeCategory + ' | קטגוריות שלא סודרו עדיין מופיעות באקראי';
+            return;
+        }
+
+        if (currentGame.questions.length > 0) {
+            element.textContent = 'כל הקטגוריות שבסדר הסתיימו — ממשיכים אקראית בשאלות שלא סודרו';
+            return;
+        }
+
+        element.textContent = 'המשחק הסתיים';
+    }
+
+    // Normalize all answer values to strings for consistent handling
+    questionBank = normalizeQuestionBankPayload(questionBank, createDefaultQuestionBankSettings(), [], 'רשומה ').questions;
+
+    let questionBankSettings = createDefaultQuestionBankSettings();
     const defaultQuestionBank = questionBank.map(q => ({...q}));
+    const defaultQuestionBankSettings = createDefaultQuestionBankSettings();
 
     // ===================== Emoji Sets =====================
     const rainEmojis = ['🎉', '⭐', '🎊', '✨', '🎈', '🎯', '🏆', '🌟', '💫', '🎪'];
@@ -1560,7 +1953,7 @@
 
     // ===================== Core Game Functions =====================
     function startNewGame(autoSwitch = true) {
-        currentGame.questions = [...questionBank];
+        currentGame.questions = questionBank.map(item => ({ ...item }));
         currentGame.usedQuestions = [];
         currentGame.currentQuestion = null;
         currentGame.answerRevealed = false;
@@ -1576,6 +1969,7 @@
         updateStats();
         updateHistory();
         updateBankBadge();
+        updateGameCategoryStatus();
         createFloatingEmoji('🎮');
 
         if (autoSwitch) showView('game');
@@ -1608,7 +2002,21 @@
             currentGame.usedQuestions[currentGame.usedQuestions.length - 1].revealed = true;
         }
 
-        const idx = Math.floor(Math.random() * currentGame.questions.length);
+        const candidates = getDrawCandidates();
+        if (candidates.length === 0) {
+            const hasRemainingOrderedCategories = questionBankSettings.categoryOrder.some(category =>
+                currentGame.questions.some(question => normalizeCategoryName(question.cat) === category)
+            );
+            alert(
+                hasRemainingOrderedCategories
+                    ? 'לא נמצאו שאלות מתאימות להגרלה לפי הסדר שהוגדר. בדוק את סדר הקטגוריות.'
+                    : 'לא נותרו שאלות מתאימות להגרלה. אפשר להתחיל משחק חדש או לעדכן את סדר הקטגוריות.'
+            );
+            updateGameCategoryStatus();
+            return;
+        }
+        const selectedQuestion = candidates[Math.floor(Math.random() * candidates.length)];
+        const idx = currentGame.questions.indexOf(selectedQuestion);
         currentGame.currentQuestion = currentGame.questions.splice(idx, 1)[0];
         currentGame.usedQuestions.push({ ...currentGame.currentQuestion, revealed: false });
         currentGame.answerRevealed = false;
@@ -1626,6 +2034,7 @@
         createEmojiRain();
         updateStats();
         updateHistory();
+        updateGameCategoryStatus();
     }
 
     function revealAnswer() {
@@ -1645,6 +2054,7 @@
 
         createFloatingEmoji('🎯');
         updateHistory();
+        updateGameCategoryStatus();
     }
 
     // ===================== Student Names Helpers =====================
@@ -1927,6 +2337,117 @@
 
     // ===================== Question Bank Management =====================
 
+    function toggleOrderedCategories(enabled) {
+        questionBankSettings.orderedCategoriesEnabled = Boolean(enabled);
+        syncQuestionBankSettings();
+    }
+
+    function addCategoryToOrder(category) {
+        const cat = normalizeCategoryName(category);
+        if (!cat || questionBankSettings.categoryOrder.includes(cat)) return;
+        questionBankSettings.categoryOrder.push(cat);
+        syncQuestionBankSettings();
+    }
+
+    function removeCategoryFromOrder(category) {
+        const cat = normalizeCategoryName(category);
+        questionBankSettings.categoryOrder = questionBankSettings.categoryOrder.filter(item => item !== cat);
+        syncQuestionBankSettings();
+    }
+
+    function moveOrderedCategory(category, direction) {
+        const cat = normalizeCategoryName(category);
+        const idx = questionBankSettings.categoryOrder.indexOf(cat);
+        const nextIdx = idx + direction;
+        if (idx === -1 || nextIdx < 0 || nextIdx >= questionBankSettings.categoryOrder.length) return;
+        const updated = [...questionBankSettings.categoryOrder];
+        [updated[idx], updated[nextIdx]] = [updated[nextIdx], updated[idx]];
+        questionBankSettings.categoryOrder = updated;
+        syncQuestionBankSettings();
+    }
+
+    function renderCategoryOrderEditor() {
+        const editor = document.getElementById('bankOrderEditor');
+        const toggle = document.getElementById('orderedCategoriesEnabled');
+        const status = document.getElementById('bankConfigStatus');
+        if (!editor || !toggle || !status) return;
+
+        toggle.checked = questionBankSettings.orderedCategoriesEnabled;
+        status.textContent = questionBankSettings.orderedCategoriesEnabled ? 'סדר קטגוריות פעיל' : 'מצב אקראי מלא';
+
+        const counts = getQuestionBankCategoryCounts();
+        const actualCategories = getQuestionBankCategories();
+        const ordered = questionBankSettings.categoryOrder;
+        const allCategories = [...ordered, ...actualCategories.filter(cat => !ordered.includes(cat))];
+
+        if (allCategories.length === 0) {
+            editor.innerHTML = '<div class="bank-order-empty">אין קטגוריות בבנק כרגע.</div>';
+            return;
+        }
+
+        editor.innerHTML = '';
+        allCategories.forEach(category => {
+            const orderIndex = ordered.indexOf(category);
+            const inOrder = orderIndex !== -1;
+            const count = counts[category] || 0;
+            const isMissing = !count;
+            const label = isMissing ? 'לא קיימת כרגע בבנק' : count + ' שאלות';
+
+            const row = document.createElement('div');
+            row.className = 'bank-order-row' + (inOrder ? '' : ' bank-order-row--inactive');
+
+            const labelWrap = document.createElement('div');
+            labelWrap.className = 'bank-order-label';
+
+            const nameEl = document.createElement('span');
+            nameEl.className = 'bank-order-name';
+            nameEl.textContent = category;
+
+            const metaEl = document.createElement('span');
+            metaEl.className = 'bank-order-meta';
+            metaEl.textContent = (inOrder ? 'מיקום ' + (orderIndex + 1) + ' בסדר | ' : 'מוגרל אקראית | ') + label;
+
+            labelWrap.appendChild(nameEl);
+            labelWrap.appendChild(metaEl);
+
+            const controls = document.createElement('div');
+            controls.className = 'bank-order-controls';
+
+            if (inOrder) {
+                const upBtn = document.createElement('button');
+                upBtn.className = 'btn btn-small btn-outline';
+                upBtn.textContent = '⬆️';
+                upBtn.disabled = orderIndex === 0;
+                upBtn.onclick = () => moveOrderedCategory(category, -1);
+
+                const downBtn = document.createElement('button');
+                downBtn.className = 'btn btn-small btn-outline';
+                downBtn.textContent = '⬇️';
+                downBtn.disabled = orderIndex === ordered.length - 1;
+                downBtn.onclick = () => moveOrderedCategory(category, 1);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-small btn-bank-reset btn-outline';
+                removeBtn.textContent = '⇄ העבר לאקראי';
+                removeBtn.onclick = () => removeCategoryFromOrder(category);
+
+                controls.appendChild(upBtn);
+                controls.appendChild(downBtn);
+                controls.appendChild(removeBtn);
+            } else {
+                const addBtn = document.createElement('button');
+                addBtn.className = 'btn btn-small btn-primary';
+                addBtn.textContent = '➕ הוסף לסדר';
+                addBtn.onclick = () => addCategoryToOrder(category);
+                controls.appendChild(addBtn);
+            }
+
+            row.appendChild(labelWrap);
+            row.appendChild(controls);
+            editor.appendChild(row);
+        });
+    }
+
     function updateBankBadge() {
         const badge = document.getElementById('bankCountBadge');
         if (badge) badge.textContent = questionBank.length + ' שאלות';
@@ -1937,7 +2458,7 @@
         const boardCatSel = document.getElementById('boardCategory');
         if (boardCatSel) {
             const prevVal = boardCatSel.value;
-            const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
+            const cats = getQuestionBankCategories();
             boardCatSel.innerHTML = '<option value="">כל הקטגוריות</option>';
             cats.forEach(c => {
                 const opt = document.createElement('option');
@@ -1950,7 +2471,7 @@
     }
 
     function openQuestionPool() {
-        const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
+        const cats = getQuestionBankCategories();
         const sel = document.getElementById('poolFilterCat');
         const current = sel.value;
         sel.innerHTML = '<option value="">כל הקטגוריות</option>';
@@ -2028,7 +2549,7 @@
             return;
         }
         const item = questionBank[idx];
-        const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
+        const cats = getQuestionBankCategories();
         const catOptions = cats.map(c =>
             '<option value="' + escHtml(c) + '"' + (c === item.cat ? ' selected' : '') + '>' + escHtml(c) + '</option>'
         ).join('');
@@ -2076,7 +2597,7 @@
         const gameIdx = currentGame.questions.findIndex(item => item.q === oldQ);
         if (gameIdx !== -1) currentGame.questions[gameIdx] = { ...questionBank[idx] };
 
-        updateBankBadge();
+        syncQuestionBankSettings();
         openQuestionPool();
     }
 
@@ -2085,14 +2606,14 @@
         const removed = questionBank[idx];
         questionBank.splice(idx, 1);
         currentGame.questions = currentGame.questions.filter(q => q.q !== removed.q);
-        updateBankBadge();
+        syncQuestionBankSettings();
         renderQuestionPool();
     }
 
     function addQuestion() {
         questionBank.push({ q: '', a: '', cat: '' });
-        updateBankBadge();
-        const cats = [...new Set(questionBank.map(q => q.cat).filter(Boolean))].sort();
+        syncQuestionBankSettings();
+        const cats = getQuestionBankCategories();
         const sel = document.getElementById('poolFilterCat');
         sel.innerHTML = '<option value="">כל הקטגוריות</option>';
         cats.forEach(c => {
@@ -2114,68 +2635,34 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const text = e.target.result;
-            let parsed = [];
-            const errors = [];
+            let result;
 
             if (ext === 'json') {
                 try {
-                    parsed = JSON.parse(text);
-                    if (!Array.isArray(parsed)) throw new Error('הקובץ אינו מערך JSON');
-                } catch(err) {
-                    alert('שגיאה בקריאת קובץ JSON: ' + err.message);
+                    result = parseQuestionBankJsonText(text);
+                } catch (err) {
+                    alert(err.message);
                     return;
                 }
-                const valid = [];
-                parsed.forEach((item, i) => {
-                    if (!item || typeof item.q !== 'string' || !item.q.trim()) {
-                        errors.push('רשומה ' + (i + 1) + ': שאלה חסרה');
-                        return;
-                    }
-                    const rawA = item.a !== undefined ? item.a : item.answer;
-                    const a = String(rawA !== undefined && rawA !== null ? rawA : '').trim();
-                    if (!a) {
-                        errors.push('רשומה ' + (i + 1) + ': תשובה ריקה');
-                        return;
-                    }
-                    valid.push({ q: item.q.trim(), a, cat: String(item.cat || item.category || '').trim() });
-                });
-                parsed = valid;
             } else if (ext === 'csv') {
-                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                let startIdx = 0;
-                if (lines.length > 0) {
-                    const cols = splitCsvRow(lines[0]);
-                    const firstColIsKnownHeader = cols.length >= 1 && /^(question|q|שאלה)$/i.test(cols[0].trim());
-                    const secondColIsKnownHeader = cols.length >= 2 && /^(answer|a|תשובה)$/i.test(cols[1].trim());
-                    if (firstColIsKnownHeader && secondColIsKnownHeader) startIdx = 1;
-                }
-                for (let i = startIdx; i < lines.length; i++) {
-                    const cols = splitCsvRow(lines[i]);
-                    if (cols.length < 2) { errors.push('שורה ' + (i + 1) + ': חסרות עמודות'); continue; }
-                    const q = cols[0].trim();
-                    const a = cols[1].trim();
-                    const cat = cols[2] ? cols[2].trim() : '';
-                    if (!q) { errors.push('שורה ' + (i + 1) + ': שאלה ריקה'); continue; }
-                    if (!a) { errors.push('שורה ' + (i + 1) + ': תשובה ריקה'); continue; }
-                    parsed.push({ q, a, cat });
-                }
+                result = parseQuestionBankCsvText(text);
             } else {
                 alert('פורמט קובץ לא נתמך. השתמש ב-JSON או CSV.');
                 return;
             }
 
-            if (errors.length > 0) {
-                const msg = 'נמצאו ' + errors.length + ' שגיאות:\n' + errors.slice(0, 10).join('\n') +
-                    (errors.length > 10 ? '\n...' : '');
-                if (parsed.length === 0) { alert(msg); return; }
-                if (!confirm(msg + '\n\nהאם לטעון את ' + parsed.length + ' השאלות התקינות?')) return;
+            if (result.errors.length > 0) {
+                const msg = 'נמצאו ' + result.errors.length + ' שגיאות:\n' + result.errors.slice(0, 10).join('\n') +
+                    (result.errors.length > 10 ? '\n...' : '');
+                if (result.questions.length === 0) { alert(msg); return; }
+                if (!confirm(msg + '\n\nהאם לטעון את ' + result.questions.length + ' השאלות התקינות?')) return;
             }
 
-            if (parsed.length === 0) { alert('לא נמצאו שאלות תקינות בקובץ.'); return; }
+            if (result.questions.length === 0) { alert('לא נמצאו שאלות תקינות בקובץ.'); return; }
 
-            questionBank = parsed;
+            applyQuestionBankData(result);
             startNewGame();
-            alert('נטענו ' + parsed.length + ' שאלות בהצלחה! 🎉');
+            alert('נטענו ' + result.questions.length + ' שאלות בהצלחה! 🎉');
         };
         reader.readAsText(file, 'UTF-8');
         input.value = '';
@@ -2202,19 +2689,31 @@
     }
 
     function saveQuestionBank() {
-        const json = JSON.stringify(questionBank, null, 2);
+        const json = JSON.stringify({
+            questions: questionBank,
+            settings: cloneQuestionBankSettings(questionBankSettings)
+        }, null, 2);
         downloadBlob(new Blob([json], { type: 'application/json;charset=utf-8' }), 'question-bank.json');
     }
 
     function saveQuestionBankCSV() {
         const header = 'question,answer,category';
+        const configRows = [
+            '# bingo-settings',
+            'setting,value',
+            'orderedCategoriesEnabled,' + (questionBankSettings.orderedCategoriesEnabled ? 'true' : 'false'),
+            ...questionBankSettings.categoryOrder.map(category =>
+                'categoryOrder,"' + String(category).replace(/"/g, '""') + '"'
+            ),
+            ''
+        ];
         const rows = questionBank.map(item => {
             const q = '"' + String(item.q).replace(/"/g, '""') + '"';
             const a = '"' + String(item.a).replace(/"/g, '""') + '"';
             const cat = '"' + String(item.cat || '').replace(/"/g, '""') + '"';
             return q + ',' + a + ',' + cat;
         });
-        const csv = [header, ...rows].join('\n');
+        const csv = [...configRows, header, ...rows].join('\n');
         downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'question-bank.csv');
     }
 
@@ -2232,6 +2731,8 @@
     function resetQuestionBank() {
         if (!confirm('האם לטעון את בנק הדוגמה (מתמטיקה כיתה ט׳ – 4 יחל)? הבנק הנוכחי יאבד.')) return;
         questionBank = defaultQuestionBank.map(q => ({...q}));
+        questionBankSettings = cloneQuestionBankSettings(defaultQuestionBankSettings);
+        syncQuestionBankSettings();
         startNewGame();
         alert('נטען בנק הדוגמה (מתמטיקה כיתה ט׳ – 4 יחל) ✅');
     }
@@ -2309,42 +2810,28 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
             alert('אנא הדבק JSON לפני הייבוא.');
             return;
         }
-        let parsed;
+        let result;
         try {
-            parsed = JSON.parse(raw);
-            if (!Array.isArray(parsed)) throw new Error('הקובץ אינו מערך JSON');
+            result = parseQuestionBankJsonText(raw);
         } catch (err) {
-            alert('שגיאה בפרסור ה-JSON: ' + err.message + '\n\nוודא שהדבקת מערך JSON תקין.');
+            alert(err.message + '\n\nוודא שהדבקת JSON תקין.');
             return;
         }
-        const valid = [];
-        const errors = [];
-        parsed.forEach((item, i) => {
-            if (!item || typeof item.q !== 'string' || !item.q.trim()) {
-                errors.push('רשומה ' + (i + 1) + ': שאלה חסרה');
-                return;
-            }
-            // accept both 'a' and 'answer', and both 'cat' and 'category', to match loadQuestionBank behaviour
-            const rawA = item.a !== undefined ? item.a : item.answer;
-            const a = String(rawA !== undefined && rawA !== null ? rawA : '').trim();
-            if (!a) {
-                errors.push('רשומה ' + (i + 1) + ': תשובה ריקה');
-                return;
-            }
-            valid.push({ q: item.q.trim(), a, cat: String(item.cat || item.category || '').trim() });
-        });
-        if (errors.length > 0) {
-            const msg = 'נמצאו ' + errors.length + ' שגיאות:\n' + errors.slice(0, 10).join('\n') +
-                (errors.length > 10 ? '\n...' : '');
-            if (valid.length === 0) { alert(msg); return; }
-            if (!confirm(msg + '\n\nהאם לטעון את ' + valid.length + ' השאלות התקינות?')) return;
+        if (result.errors.length > 0) {
+            const msg = 'נמצאו ' + result.errors.length + ' שגיאות:\n' + result.errors.slice(0, 10).join('\n') +
+                (result.errors.length > 10 ? '\n...' : '');
+            if (result.questions.length === 0) { alert(msg); return; }
+            if (!confirm(msg + '\n\nהאם לטעון את ' + result.questions.length + ' השאלות התקינות?')) return;
         }
-        if (valid.length === 0) { alert('לא נמצאו שאלות תקינות ב-JSON.'); return; }
-        questionBank = valid;
+        if (result.questions.length === 0) { alert('לא נמצאו שאלות תקינות ב-JSON.'); return; }
+        if (!result.hasExplicitSettings) {
+            result.settings = createDefaultQuestionBankSettings();
+        }
+        applyQuestionBankData(result);
         startNewGame();
         document.getElementById('aiPromptModal').classList.add('hidden');
         document.getElementById('aiPasteJson').value = '';
-        alert('נטענו ' + valid.length + ' שאלות בהצלחה! 🎉');
+        alert('נטענו ' + result.questions.length + ' שאלות בהצלחה! 🎉');
     }
 
 
@@ -2385,7 +2872,10 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
         document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === name));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
         localStorage.setItem('activeView', name);
-        if (name === 'admin') updateAdminSummary();
+        if (name === 'admin') {
+            updateAdminSummary();
+            renderCategoryOrderEditor();
+        }
     }
 
     function updateAdminSummary() {
@@ -2397,8 +2887,9 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
             counts[cat] = (counts[cat] || 0) + 1;
         });
         const cats = Object.keys(counts).sort();
+        const orderedSet = new Set(questionBankSettings.categoryOrder);
         list.innerHTML = cats.length
-            ? cats.map(c => '<li class="admin-cat-item">' + escHtml(c) + ' <strong>(' + counts[c] + ')</strong></li>').join('')
+            ? cats.map(c => '<li class="admin-cat-item">' + escHtml(c) + ' <strong>(' + counts[c] + ')</strong>' + (orderedSet.has(c) ? ' • בסדר' : '') + '</li>').join('')
             : '<li class="admin-cat-item">אין קטגוריות</li>';
     }
 

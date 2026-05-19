@@ -1546,7 +1546,7 @@
 
             <!-- Question Display -->
             <div class="question-display" id="questionDisplay">
-                <div class="current-question-category" id="currentQuestionCategory" role="status" aria-live="off">קטגוריה נוכחית: טרם נבחרה קטגוריה</div>
+                <div class="current-question-category" id="currentQuestionCategory" role="status" aria-live="polite"></div>
                 <div id="questionText">לחץ על 'הגרל שאלה' כדי להתחיל! 🎲</div>
                 <div id="answerDisplay" class="answer-display hidden"></div>
             </div>
@@ -1980,12 +1980,10 @@
 
         if (!currentGame.currentQuestion) {
             element.textContent = CURRENT_QUESTION_CATEGORY_PREFIX + CURRENT_QUESTION_CATEGORY_EMPTY;
-            element.setAttribute('aria-live', 'off');
             return;
         }
 
         const currentCategory = normalizeCategoryName(currentGame.currentQuestion.cat);
-        element.setAttribute('aria-live', 'polite');
         element.textContent = CURRENT_QUESTION_CATEGORY_PREFIX + (currentCategory || CURRENT_QUESTION_CATEGORY_FALLBACK);
     }
 

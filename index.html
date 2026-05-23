@@ -428,6 +428,11 @@
 
         .board-cell.answer-medium { font-size: 1.1em; }
         .board-cell.answer-long   { font-size: 0.85em; font-weight: 600; }
+        .board-cell.placeholder-icon {
+            font-size: 1.9em;
+            font-weight: 500;
+            background: #f7f9ff;
+        }
 
         .board-cell.free-space {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1982,6 +1987,8 @@
 
     // ===================== Emoji Sets =====================
     const rainEmojis = ['🎉', '⭐', '🎊', '✨', '🎈', '🎯', '🏆', '🌟', '💫', '🎪'];
+    const boardPlaceholderIcons = ['⭐', '✨', '🎯', '🎈', '🌟', '💫', '🎉', '🧩', '🔷', '🟣'];
+    const MIN_REAL_ANSWER_RATIO = 0.75;
 
     // ===================== Game State =====================
     let currentGame = {
@@ -2253,8 +2260,9 @@
             poolAnswers = uniqueAnswers.filter(answer => answer !== centerAnswer);
         }
 
-        if (poolAnswers.length < cellsToFill) {
-            alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + cellsToFill + '. הוסף שאלות או הקטן את גודל הלוח.');
+        const minRealAnswers = Math.ceil(cellsToFill * MIN_REAL_ANSWER_RATIO);
+        if (poolAnswers.length < minRealAnswers) {
+            alert('אין מספיק תשובות אמיתיות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, ונדרשות לפחות ' + minRealAnswers + ' כדי לשמור על לפחות 75% תשובות אמיתיות בלוח. הוסף שאלות או הקטן את גודל הלוח.');
             return;
         }
 
@@ -2273,7 +2281,9 @@
 
         printBtn.disabled = false;
         createFloatingEmoji('📋');
-        alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '! גלול למטה להדפסה 🖨️');
+        const placeholdersPerBoard = Math.max(0, cellsToFill - Math.min(cellsToFill, poolAnswers.length));
+        const placeholderSummary = placeholdersPerBoard > 0 ? (' (כולל ' + placeholdersPerBoard + ' אייקונים ממלאי מקום בכל לוח)') : '';
+        alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '!' + placeholderSummary + ' גלול למטה להדפסה 🖨️');
         setTimeout(() => {
             printBoards.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
@@ -2283,11 +2293,25 @@
         const totalCells = size * size;
         const cellCount = totalCells - (hasFreeSpace ? 1 : 0);
 
-        // Shuffle and pick unique answers
+        // Shuffle and pick answers
         const shuffled = [...allAnswers].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, cellCount);
+        const selected = shuffled.slice(0, Math.min(cellCount, shuffled.length)).map(value => ({
+            value: String(value),
+            isPlaceholder: false
+        }));
 
-        // Shuffle selected answers for board arrangement
+        const missingCells = cellCount - selected.length;
+        if (missingCells > 0) {
+            const iconOffset = Math.floor(Math.random() * boardPlaceholderIcons.length);
+            for (let i = 0; i < missingCells; i++) {
+                selected.push({
+                    value: boardPlaceholderIcons[(iconOffset + i) % boardPlaceholderIcons.length],
+                    isPlaceholder: true
+                });
+            }
+        }
+
+        // Shuffle selected values for board arrangement
         selected.sort(() => Math.random() - 0.5);
 
         const boardEl = document.createElement('div');
@@ -2329,11 +2353,17 @@
                     cell.textContent = '⭐ חינם';
                 }
             } else {
-                const val = String(selected[answerIdx++]);
+                const entry = selected[answerIdx++] || { value: boardPlaceholderIcons[0], isPlaceholder: true };
+                const val = entry.value;
                 cell.textContent = val;
-                cell.title = val;
-                if (val.length > 8) cell.classList.add('answer-long');
-                else if (val.length > 4) cell.classList.add('answer-medium');
+                cell.title = entry.isPlaceholder ? 'אייקון ממלא מקום' : val;
+                if (entry.isPlaceholder) {
+                    cell.classList.add('placeholder-icon');
+                } else if (val.length > 8) {
+                    cell.classList.add('answer-long');
+                } else if (val.length > 4) {
+                    cell.classList.add('answer-medium');
+                }
             }
 
             grid.appendChild(cell);

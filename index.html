@@ -1502,7 +1502,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="centerMode">תא מרכזי (בלוח אי-זוגי)</label>
+                    <label for="centerMode">תא מרכזי (בלוח אי זוגי)</label>
                     <select id="centerMode">
                         <option value="free" selected>⭐ חינם (ברירת מחדל)</option>
                         <option value="question">השתמש בשאלה ספציפית במרכז</option>
@@ -2231,6 +2231,7 @@
         const centerMode = document.getElementById('centerMode').value;
         const useSpecificCenter = hasFreeSpace && centerMode === 'question';
         let centerAnswer = null;
+        let poolAnswers = uniqueAnswers;
 
         if (useSpecificCenter) {
             const centerQuestionValue = document.getElementById('centerQuestion').value;
@@ -2248,9 +2249,9 @@
             centerAnswer = String(selectedQuestion.a);
         }
 
-        const poolAnswers = useSpecificCenter
-            ? uniqueAnswers.filter(answer => answer !== centerAnswer)
-            : uniqueAnswers;
+        if (useSpecificCenter) {
+            poolAnswers = uniqueAnswers.filter(answer => answer !== centerAnswer);
+        }
 
         if (poolAnswers.length < randomCellsRequired) {
             alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + randomCellsRequired + '. הוסף שאלות או הקטן את גודל הלוח.');
@@ -2595,7 +2596,7 @@
         const centerMode = document.getElementById('centerMode');
         const centerQuestionGroup = document.getElementById('centerQuestionGroup');
 
-        if (!centerMode || !centerQuestionGroup || Number.isNaN(boardSize)) return;
+        if (!centerMode || !centerQuestionGroup || Number.isNaN(boardSize) || boardSize < 1) return;
 
         const isOddBoard = boardSize % 2 !== 0;
         if (!isOddBoard) {

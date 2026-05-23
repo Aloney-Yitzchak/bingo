@@ -428,6 +428,11 @@
 
         .board-cell.answer-medium { font-size: 1.1em; }
         .board-cell.answer-long   { font-size: 0.85em; font-weight: 600; }
+        .board-cell.placeholder-icon {
+            font-size: 1.9em;
+            font-weight: 500;
+            background: #f7f9ff;
+        }
 
         .board-cell.free-space {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1982,6 +1987,9 @@
 
     // ===================== Emoji Sets =====================
     const rainEmojis = ['🎉', '⭐', '🎊', '✨', '🎈', '🎯', '🏆', '🌟', '💫', '🎪'];
+    const boardPlaceholderIcons = ['⭐', '✨', '🎯', '🎈', '🌟', '💫', '🎉', '🧩', '🔷', '🟣'];
+    const PLACEHOLDER_MULTIPLIER = 2;
+    const EXTRA_PLACEHOLDERS_WITHOUT_CENTER = 2;
 
     // ===================== Game State =====================
     let currentGame = {
@@ -2253,11 +2261,6 @@
             poolAnswers = uniqueAnswers.filter(answer => answer !== centerAnswer);
         }
 
-        if (poolAnswers.length < cellsToFill) {
-            alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + cellsToFill + '. הוסף שאלות או הקטן את גודל הלוח.');
-            return;
-        }
-
         // Generate boards
         printBoards.innerHTML = '';
 
@@ -2266,29 +2269,51 @@
         printBoards.classList.remove('print-1up', 'print-2up');
         printBoards.classList.add('print-' + layout);
 
+        const placeholdersPerBoard = getBoardPlaceholderCount(poolAnswers.length, cellsToFill, centerAnswer !== null);
         for (let i = 0; i < numPlayers; i++) {
-            const board = createBingoBoard(boardSize, poolAnswers, playerLabels[i], hasFreeSpace, useNames, centerAnswer);
+            const board = createBingoBoard(boardSize, poolAnswers, playerLabels[i], hasFreeSpace, useNames, centerAnswer, placeholdersPerBoard);
             printBoards.appendChild(board);
         }
 
         printBtn.disabled = false;
         createFloatingEmoji('📋');
-        alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '! גלול למטה להדפסה 🖨️');
+        const placeholderSummary = placeholdersPerBoard > 0 ? ` (מאגר אייקונים מורחב: ${placeholdersPerBoard} ממלאי מקום ללוח מגוון יותר)` : '';
+        alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '!' + placeholderSummary + ' גלול למטה להדפסה 🖨️');
         setTimeout(() => {
             printBoards.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     }
 
-    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null) {
+    function getBoardPlaceholderCount(realAnswersCount, cellCount, hasSpecificCenter = false) {
+        const missingCells = Math.max(0, cellCount - realAnswersCount);
+        if (missingCells === 0) return 0;
+        return hasSpecificCenter
+            ? (missingCells * PLACEHOLDER_MULTIPLIER)
+            : (missingCells * PLACEHOLDER_MULTIPLIER + EXTRA_PLACEHOLDERS_WITHOUT_CENTER);
+    }
+
+    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null, placeholderCount = 0) {
         const totalCells = size * size;
         const cellCount = totalCells - (hasFreeSpace ? 1 : 0);
 
-        // Shuffle and pick unique answers
-        const shuffled = [...allAnswers].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, cellCount);
+        // Shuffle and pick answers
+        const realEntries = [...allAnswers].map(value => ({
+            value: String(value),
+            isPlaceholder: false
+        }));
+        const poolEntries = [...realEntries];
+        if (placeholderCount > 0) {
+            const iconOffset = Math.floor(Math.random() * boardPlaceholderIcons.length);
+            for (let i = 0; i < placeholderCount; i++) {
+                poolEntries.push({
+                    value: boardPlaceholderIcons[(iconOffset + i) % boardPlaceholderIcons.length],
+                    isPlaceholder: true
+                });
+            }
+        }
 
-        // Shuffle selected answers for board arrangement
-        selected.sort(() => Math.random() - 0.5);
+        // Shuffle pool values and pick board arrangement
+        const selected = poolEntries.sort(() => Math.random() - 0.5).slice(0, cellCount);
 
         const boardEl = document.createElement('div');
         boardEl.className = 'bingo-board';
@@ -2329,11 +2354,17 @@
                     cell.textContent = '⭐ חינם';
                 }
             } else {
-                const val = String(selected[answerIdx++]);
+                const entry = selected[answerIdx++];
+                const val = entry.value;
                 cell.textContent = val;
-                cell.title = val;
-                if (val.length > 8) cell.classList.add('answer-long');
-                else if (val.length > 4) cell.classList.add('answer-medium');
+                cell.title = entry.isPlaceholder ? 'אייקון ממלא מקום' : val;
+                if (entry.isPlaceholder) {
+                    cell.classList.add('placeholder-icon');
+                } else if (val.length > 8) {
+                    cell.classList.add('answer-long');
+                } else if (val.length > 4) {
+                    cell.classList.add('answer-medium');
+                }
             }
 
             grid.appendChild(cell);

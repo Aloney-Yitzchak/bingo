@@ -2227,7 +2227,7 @@
         const filtered = getBoardFilteredQuestions();
         const uniqueAnswers = [...new Set(filtered.map(q => String(q.a)))];
         const hasFreeSpace = boardSize % 2 !== 0;
-        const randomCellsRequired = boardSize * boardSize - (hasFreeSpace ? 1 : 0);
+        const cellsToFill = boardSize * boardSize - (hasFreeSpace ? 1 : 0);
         const centerMode = document.getElementById('centerMode').value;
         const useSpecificCenter = hasFreeSpace && centerMode === 'question';
         let centerAnswer = null;
@@ -2253,8 +2253,8 @@
             poolAnswers = uniqueAnswers.filter(answer => answer !== centerAnswer);
         }
 
-        if (poolAnswers.length < randomCellsRequired) {
-            alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + randomCellsRequired + '. הוסף שאלות או הקטן את גודל הלוח.');
+        if (poolAnswers.length < cellsToFill) {
+            alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + cellsToFill + '. הוסף שאלות או הקטן את גודל הלוח.');
             return;
         }
 
@@ -2568,11 +2568,11 @@
     }
 
     function getCenterQuestionKey(question) {
-        return JSON.stringify({
-            q: String(question.q),
-            a: String(question.a),
-            cat: normalizeCategoryName(question.cat)
-        });
+        return [
+            String(question.q).replace(/\|/g, '\\|'),
+            String(question.a).replace(/\|/g, '\\|'),
+            normalizeCategoryName(question.cat).replace(/\|/g, '\\|')
+        ].join('|');
     }
 
     function refreshCenterQuestionOptions() {

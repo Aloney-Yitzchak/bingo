@@ -1988,7 +1988,6 @@
     // ===================== Emoji Sets =====================
     const rainEmojis = ['🎉', '⭐', '🎊', '✨', '🎈', '🎯', '🏆', '🌟', '💫', '🎪'];
     const boardPlaceholderIcons = ['⭐', '✨', '🎯', '🎈', '🌟', '💫', '🎉', '🧩', '🔷', '🟣'];
-    const MIN_REAL_ANSWER_RATIO = 0.75;
 
     // ===================== Game State =====================
     let currentGame = {
@@ -2260,12 +2259,6 @@
             poolAnswers = uniqueAnswers.filter(answer => answer !== centerAnswer);
         }
 
-        const minRealAnswers = Math.ceil(cellsToFill * MIN_REAL_ANSWER_RATIO);
-        if (poolAnswers.length < minRealAnswers) {
-            alert('אין מספיק תשובות אמיתיות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, ונדרשות לפחות ' + minRealAnswers + ' כדי לשמור על לפחות 75% תשובות אמיתיות בלוח. הוסף שאלות או הקטן את גודל הלוח.');
-            return;
-        }
-
         // Generate boards
         printBoards.innerHTML = '';
 
@@ -2274,45 +2267,49 @@
         printBoards.classList.remove('print-1up', 'print-2up');
         printBoards.classList.add('print-' + layout);
 
+        const placeholdersPerBoard = getBoardPlaceholderCount(poolAnswers.length, cellsToFill, centerAnswer !== null);
         for (let i = 0; i < numPlayers; i++) {
-            const board = createBingoBoard(boardSize, poolAnswers, playerLabels[i], hasFreeSpace, useNames, centerAnswer);
+            const board = createBingoBoard(boardSize, poolAnswers, playerLabels[i], hasFreeSpace, useNames, centerAnswer, placeholdersPerBoard);
             printBoards.appendChild(board);
         }
 
         printBtn.disabled = false;
         createFloatingEmoji('📋');
-        const placeholdersPerBoard = Math.max(0, cellsToFill - Math.min(cellsToFill, poolAnswers.length));
-        const placeholderSummary = placeholdersPerBoard > 0 ? (' (כולל ' + placeholdersPerBoard + ' אייקונים ממלאי מקום בכל לוח)') : '';
+        const placeholderSummary = placeholdersPerBoard > 0 ? (' (מאגר אייקונים מורחב: ' + placeholdersPerBoard + ' ממלאי מקום ללוח מגוון יותר)') : '';
         alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '!' + placeholderSummary + ' גלול למטה להדפסה 🖨️');
         setTimeout(() => {
             printBoards.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     }
 
-    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null) {
+    function getBoardPlaceholderCount(realAnswersCount, cellCount, hasSpecificCenter = false) {
+        const missingCells = Math.max(0, cellCount - realAnswersCount);
+        if (missingCells === 0) return 0;
+        return hasSpecificCenter ? (missingCells * 2) : (missingCells * 2 + 2);
+    }
+
+    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null, placeholderCount = 0) {
         const totalCells = size * size;
         const cellCount = totalCells - (hasFreeSpace ? 1 : 0);
 
         // Shuffle and pick answers
-        const shuffled = [...allAnswers].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, Math.min(cellCount, shuffled.length)).map(value => ({
+        const realEntries = [...allAnswers].map(value => ({
             value: String(value),
             isPlaceholder: false
         }));
-
-        const missingCells = cellCount - selected.length;
-        if (missingCells > 0) {
+        const poolEntries = [...realEntries];
+        if (placeholderCount > 0) {
             const iconOffset = Math.floor(Math.random() * boardPlaceholderIcons.length);
-            for (let i = 0; i < missingCells; i++) {
-                selected.push({
+            for (let i = 0; i < placeholderCount; i++) {
+                poolEntries.push({
                     value: boardPlaceholderIcons[(iconOffset + i) % boardPlaceholderIcons.length],
                     isPlaceholder: true
                 });
             }
         }
 
-        // Shuffle selected values for board arrangement
-        selected.sort(() => Math.random() - 0.5);
+        // Shuffle pool values and pick board arrangement
+        const selected = poolEntries.sort(() => Math.random() - 0.5).slice(0, cellCount);
 
         const boardEl = document.createElement('div');
         boardEl.className = 'bingo-board';

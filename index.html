@@ -1988,6 +1988,8 @@
     // ===================== Emoji Sets =====================
     const rainEmojis = ['🎉', '⭐', '🎊', '✨', '🎈', '🎯', '🏆', '🌟', '💫', '🎪'];
     const boardPlaceholderIcons = ['⭐', '✨', '🎯', '🎈', '🌟', '💫', '🎉', '🧩', '🔷', '🟣'];
+    const PLACEHOLDER_MULTIPLIER = 2;
+    const EXTRA_PLACEHOLDERS_WITHOUT_CENTER = 2;
 
     // ===================== Game State =====================
     let currentGame = {
@@ -2275,7 +2277,7 @@
 
         printBtn.disabled = false;
         createFloatingEmoji('📋');
-        const placeholderSummary = placeholdersPerBoard > 0 ? (' (מאגר אייקונים מורחב: ' + placeholdersPerBoard + ' ממלאי מקום ללוח מגוון יותר)') : '';
+        const placeholderSummary = placeholdersPerBoard > 0 ? ` (מאגר אייקונים מורחב: ${placeholdersPerBoard} ממלאי מקום ללוח מגוון יותר)` : '';
         alert('נוצרו ' + numPlayers + ' לוחות בגודל ' + boardSize + 'x' + boardSize + '!' + placeholderSummary + ' גלול למטה להדפסה 🖨️');
         setTimeout(() => {
             printBoards.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2285,7 +2287,9 @@
     function getBoardPlaceholderCount(realAnswersCount, cellCount, hasSpecificCenter = false) {
         const missingCells = Math.max(0, cellCount - realAnswersCount);
         if (missingCells === 0) return 0;
-        return hasSpecificCenter ? (missingCells * 2) : (missingCells * 2 + 2);
+        return hasSpecificCenter
+            ? (missingCells * PLACEHOLDER_MULTIPLIER)
+            : (missingCells * PLACEHOLDER_MULTIPLIER + EXTRA_PLACEHOLDERS_WITHOUT_CENTER);
     }
 
     function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null, placeholderCount = 0) {

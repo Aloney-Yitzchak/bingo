@@ -1502,7 +1502,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="centerMode">תא מרכזי (בלוח אי זוגי)</label>
+                    <label for="centerMode">תא מרכזי (בלוח אי-זוגי)</label>
                     <select id="centerMode">
                         <option value="free" selected>⭐ חינם (ברירת מחדל)</option>
                         <option value="question">השתמש בשאלה ספציפית במרכז</option>
@@ -2242,8 +2242,8 @@
 
             const selectedQuestion = filtered.find(item => getCenterQuestionKey(item) === centerQuestionValue);
             if (!selectedQuestion) {
-                alert('השאלה שנבחרה למרכז אינה זמינה בסינון הנוכחי. בחר שאלה אחרת.');
                 refreshCenterQuestionOptions();
+                alert('השאלה שנבחרה למרכז אינה זמינה בסינון הנוכחי. בחר שאלה אחרת.');
                 return;
             }
             centerAnswer = String(selectedQuestion.a);

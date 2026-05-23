@@ -2353,7 +2353,7 @@
                     cell.textContent = '⭐ חינם';
                 }
             } else {
-                const entry = selected[answerIdx++] || { value: boardPlaceholderIcons[0], isPlaceholder: true };
+                const entry = selected[answerIdx++];
                 const val = entry.value;
                 cell.textContent = val;
                 cell.title = entry.isPlaceholder ? 'אייקון ממלא מקום' : val;

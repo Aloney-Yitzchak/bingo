@@ -435,6 +435,12 @@
             border-color: #764ba2;
         }
 
+        .board-cell.center-question {
+            background: linear-gradient(135deg, #1fa37a 0%, #178664 100%);
+            color: white;
+            border-color: #178664;
+        }
+
         /* ===================== 10. Animations ===================== */
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
@@ -1496,6 +1502,21 @@
                 </div>
 
                 <div class="control-group">
+                    <label for="centerMode">תא מרכזי (בלוח אי-זוגי)</label>
+                    <select id="centerMode">
+                        <option value="free" selected>⭐ חינם (ברירת מחדל)</option>
+                        <option value="question">השתמש בשאלה ספציפית במרכז</option>
+                    </select>
+                </div>
+
+                <div class="control-group hidden" id="centerQuestionGroup">
+                    <label for="centerQuestion">בחר שאלה למרכז</label>
+                    <select id="centerQuestion">
+                        <option value="">בחר שאלה...</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label for="printLayout">פריסת הדפסה</label>
                     <select id="printLayout">
                         <option value="1up" selected>לוח אחד בדף</option>
@@ -2203,16 +2224,36 @@
         }
 
         // Filter questions by selected category (if any)
-        const selectedCat = document.getElementById('boardCategory').value;
-        const filtered = selectedCat
-            ? questionBank.filter(q => q.cat === selectedCat)
-            : questionBank;
+        const filtered = getBoardFilteredQuestions();
         const uniqueAnswers = [...new Set(filtered.map(q => String(q.a)))];
         const hasFreeSpace = boardSize % 2 !== 0;
-        const required = boardSize * boardSize - (hasFreeSpace ? 1 : 0);
+        const randomCellsRequired = boardSize * boardSize - (hasFreeSpace ? 1 : 0);
+        const centerMode = document.getElementById('centerMode').value;
+        const useSpecificCenter = hasFreeSpace && centerMode === 'question';
+        let centerAnswer = null;
 
-        if (uniqueAnswers.length < required) {
-            alert('אין מספיק תשובות! נמצאו ' + uniqueAnswers.length + ' תשובות, נדרשות ' + required + '. הוסף שאלות או הקטן את גודל הלוח.');
+        if (useSpecificCenter) {
+            const centerQuestionValue = document.getElementById('centerQuestion').value;
+            if (!centerQuestionValue) {
+                alert('בחר שאלה ספציפית לתא המרכזי או חזור למצב "⭐ חינם".');
+                return;
+            }
+
+            const selectedQuestion = filtered.find(item => getCenterQuestionKey(item) === centerQuestionValue);
+            if (!selectedQuestion) {
+                alert('השאלה שנבחרה למרכז אינה זמינה בסינון הנוכחי. בחר שאלה אחרת.');
+                refreshCenterQuestionOptions();
+                return;
+            }
+            centerAnswer = String(selectedQuestion.a);
+        }
+
+        const poolAnswers = useSpecificCenter
+            ? uniqueAnswers.filter(answer => answer !== centerAnswer)
+            : uniqueAnswers;
+
+        if (poolAnswers.length < randomCellsRequired) {
+            alert('אין מספיק תשובות! נמצאו ' + poolAnswers.length + ' תשובות זמינות, נדרשות ' + randomCellsRequired + '. הוסף שאלות או הקטן את גודל הלוח.');
             return;
         }
 
@@ -2225,7 +2266,7 @@
         printBoards.classList.add('print-' + layout);
 
         for (let i = 0; i < numPlayers; i++) {
-            const board = createBingoBoard(boardSize, uniqueAnswers, playerLabels[i], hasFreeSpace, useNames);
+            const board = createBingoBoard(boardSize, poolAnswers, playerLabels[i], hasFreeSpace, useNames, centerAnswer);
             printBoards.appendChild(board);
         }
 
@@ -2237,7 +2278,7 @@
         }, 100);
     }
 
-    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized) {
+    function createBingoBoard(size, allAnswers, playerLabel, hasFreeSpace, isPersonalized, centerAnswer = null) {
         const totalCells = size * size;
         const cellCount = totalCells - (hasFreeSpace ? 1 : 0);
 
@@ -2276,8 +2317,16 @@
             cell.style.minHeight = cellSize[size] + 'px';
 
             if (i === centerIdx) {
-                cell.classList.add('free-space');
-                cell.textContent = '⭐ חינם';
+                if (centerAnswer !== null) {
+                    cell.classList.add('center-question');
+                    cell.textContent = centerAnswer;
+                    cell.title = centerAnswer;
+                    if (centerAnswer.length > 8) cell.classList.add('answer-long');
+                    else if (centerAnswer.length > 4) cell.classList.add('answer-medium');
+                } else {
+                    cell.classList.add('free-space');
+                    cell.textContent = '⭐ חינם';
+                }
             } else {
                 const val = String(selected[answerIdx++]);
                 cell.textContent = val;
@@ -2505,6 +2554,59 @@
                 boardCatSel.appendChild(opt);
             });
         }
+
+        refreshCenterQuestionOptions();
+        updateCenterQuestionControls();
+    }
+
+    function getBoardFilteredQuestions() {
+        const selectedCat = document.getElementById('boardCategory').value;
+        return selectedCat
+            ? questionBank.filter(q => q.cat === selectedCat)
+            : questionBank;
+    }
+
+    function getCenterQuestionKey(question) {
+        return JSON.stringify({
+            q: String(question.q),
+            a: String(question.a),
+            cat: normalizeCategoryName(question.cat)
+        });
+    }
+
+    function refreshCenterQuestionOptions() {
+        const centerQuestionSel = document.getElementById('centerQuestion');
+        if (!centerQuestionSel) return;
+
+        const previousValue = centerQuestionSel.value;
+        centerQuestionSel.innerHTML = '<option value="">בחר שאלה...</option>';
+
+        getBoardFilteredQuestions().forEach(item => {
+            const option = document.createElement('option');
+            option.value = getCenterQuestionKey(item);
+            option.textContent = String(item.q) + ' → ' + String(item.a);
+            if (option.value === previousValue) option.selected = true;
+            centerQuestionSel.appendChild(option);
+        });
+    }
+
+    function updateCenterQuestionControls() {
+        const boardSize = parseInt(document.getElementById('boardSize').value);
+        const centerMode = document.getElementById('centerMode');
+        const centerQuestionGroup = document.getElementById('centerQuestionGroup');
+
+        if (!centerMode || !centerQuestionGroup || Number.isNaN(boardSize)) return;
+
+        const isOddBoard = boardSize % 2 !== 0;
+        if (!isOddBoard) {
+            centerMode.disabled = true;
+            centerMode.value = 'free';
+            centerQuestionGroup.classList.add('hidden');
+            return;
+        }
+
+        centerMode.disabled = false;
+        centerQuestionGroup.classList.toggle('hidden', centerMode.value !== 'question');
     }
 
     function openQuestionPool() {
@@ -2942,8 +3044,13 @@ Output ONLY a valid JSON array in this exact format, with no extra text, explana
         startNewGame(false);
         showView(localStorage.getItem('activeView') || 'setup');
         document.getElementById('studentNames').addEventListener('input', updateStudentsCountBadge);
+        document.getElementById('boardSize').addEventListener('change', updateCenterQuestionControls);
+        document.getElementById('boardCategory').addEventListener('change', refreshCenterQuestionOptions);
+        document.getElementById('centerMode').addEventListener('change', updateCenterQuestionControls);
         updateStudentsCountBadge();
         updateBankBadge();
+        refreshCenterQuestionOptions();
+        updateCenterQuestionControls();
         // Hide welcome banner if previously dismissed
         if (localStorage.getItem('welcomeDismissed') === '1') {
             const banner = document.getElementById('welcomeBanner');

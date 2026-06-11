@@ -1444,6 +1444,32 @@
             font-family: inherit;
         }
 
+        /* ===================== 22. Question Number Badge ===================== */
+        .question-number-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.1em;
+            font-weight: 800;
+            padding: 6px 20px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+            direction: rtl;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+        }
+
+        .history-card__number {
+            font-size: 0.72em;
+            font-weight: 700;
+            color: #764ba2;
+            background: #f0e8ff;
+            border-radius: 8px;
+            padding: 2px 7px;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
     </style>
 </head>
 <body>
@@ -1572,6 +1598,7 @@
 
             <!-- Question Display -->
             <div class="question-display" id="questionDisplay">
+                <div class="question-number-badge hidden" id="questionNumberBadge" role="status" aria-live="polite">שאלה <span id="questionNumberSpan"></span></div>
                 <div class="current-question-category" id="currentQuestionCategory" role="status" aria-live="polite"></div>
                 <div id="questionText">לחץ על 'הגרל שאלה' כדי להתחיל! 🎲</div>
                 <div id="answerDisplay" class="answer-display hidden"></div>
@@ -1658,9 +1685,10 @@
             <!-- Format hint -->
             <div class="admin-hint">
                 <strong>📦 בנק ברירת מחדל:</strong> דוגמה למתמטיקה כיתה ט׳ (4 יחל) — כל מורה יכול לטעון בנק משלו.<br><br>
-                <strong>פורמט JSON חדש:</strong> <code>{"questions":[{"q":"שאלה","a":"42","cat":"קטגוריה"}],"settings":{"orderedCategoriesEnabled":true,"categoryOrder":["קטגוריה א׳","קטגוריה ב׳"]}}</code><br>
+                <strong>פורמט JSON חדש:</strong> <code>{"questions":[{"q":"שאלה","a":"42","cat":"קטגוריה","n":1}],"settings":{"orderedCategoriesEnabled":true,"categoryOrder":["קטגוריה א׳","קטגוריה ב׳"]}}</code><br>
+                <strong>שדה n:</strong> מספר שאלה יציב (1-based). בייצוא JSON מתווסף אוטומטית. ניתן לציין ידנית — קובץ ללא שדה n יקבל מספרים לפי סדר השורות.<br>
                 <strong>תאימות לאחור:</strong> גם JSON ישן כמערך שאלות בלבד וגם CSV ישן עם <code>question,answer,category</code> עדיין נתמכים.<br>
-                <strong>CSV מלא:</strong> בייצוא החדש יתווסף בראש הקובץ אזור הגדרות עם <code>orderedCategoriesEnabled</code> ו-<code>categoryOrder</code>, ולאחריו טבלת השאלות הרגילה.<br>
+                <strong>CSV מלא:</strong> בייצוא החדש יתווסף <code>n</code> כעמודה ראשונה: <code>n,question,answer,category</code>. בראש הקובץ יופיע אזור הגדרות עם <code>orderedCategoriesEnabled</code> ו-<code>categoryOrder</code>.<br>
                 לקבלת בנק שאלות חדש לכל נושא, השתמש בכפתור 🤖 <strong>צור בנק עם AI</strong> ועקוב אחר ההוראות.
             </div>
 
@@ -1777,10 +1805,22 @@
             return null;
         }
 
+        // Determine stable question number: honour explicit n if valid, else use 1-based position
+        const rawN = item.n;
+        let n;
+        if (typeof rawN === 'number' && Number.isFinite(rawN) && Number.isInteger(rawN) && rawN >= 1) {
+            n = rawN;
+        } else if (typeof rawN === 'string' && /^\d+$/.test(rawN.trim()) && parseInt(rawN.trim(), 10) >= 1) {
+            n = parseInt(rawN.trim(), 10);
+        } else {
+            n = index + 1;
+        }
+
         return {
             q: item.q.trim(),
             a,
-            cat: normalizeCategoryName(item.cat !== undefined ? item.cat : item.category)
+            cat: normalizeCategoryName(item.cat !== undefined ? item.cat : item.category),
+            n
         };
     }
 
@@ -1832,6 +1872,10 @@
     function isQuestionHeaderRow(cols) {
         const first = (cols[0] || '').trim();
         const second = (cols[1] || '').trim();
+        const third = (cols[2] || '').trim();
+        // New format: n, question, answer[, category]
+        if (/^n$/i.test(first) && /^(question|q|שאלה)$/i.test(second) && /^(answer|a|תשובה)$/i.test(third)) return true;
+        // Legacy format: question, answer[, category]
         return /^(question|q|שאלה)$/i.test(first) && /^(answer|a|תשובה)$/i.test(second);
     }
 
@@ -1874,22 +1918,31 @@
             }
         }
 
+        let csvHasNColumn = false;
         if (index < nonEmptyLines.length && isQuestionHeaderRow(splitCsvRow(nonEmptyLines[index]))) {
+            const headerCols = splitCsvRow(nonEmptyLines[index]);
+            // Detect whether this CSV uses the new n-column format
+            csvHasNColumn = /^n$/i.test((headerCols[0] || '').trim());
             index++;
         }
 
         for (; index < nonEmptyLines.length; index++) {
             const cols = splitCsvRow(nonEmptyLines[index]);
-            if (cols.length < 2) {
-                errors.push('שורה ' + (index + 1) + ': חסרות עמודות');
-                continue;
+            let record;
+            if (csvHasNColumn) {
+                if (cols.length < 3) {
+                    errors.push('שורה ' + (index + 1) + ': חסרות עמודות');
+                    continue;
+                }
+                record = { n: cols[0], q: cols[1], a: cols[2], cat: cols[3] || '' };
+            } else {
+                if (cols.length < 2) {
+                    errors.push('שורה ' + (index + 1) + ': חסרות עמודות');
+                    continue;
+                }
+                record = { q: cols[0], a: cols[1], cat: cols[2] || '' };
             }
-            const normalized = normalizeQuestionRecord(
-                { q: cols[0], a: cols[1], cat: cols[2] || '' },
-                index,
-                errors,
-                'שורה '
-            );
+            const normalized = normalizeQuestionRecord(record, index, errors, 'שורה ');
             if (normalized) parsed.push(normalized);
         }
 
@@ -2027,6 +2080,9 @@
         answerDisplay.classList.add('hidden');
         answerDisplay.textContent = '';
 
+        const badge = document.getElementById('questionNumberBadge');
+        if (badge) badge.classList.add('hidden');
+
         document.getElementById('printBtn').disabled = true;
         updateCurrentQuestionCategoryDisplay();
 
@@ -2092,6 +2148,14 @@
         renderQuestion(questionText, currentGame.currentQuestion.q);
         answerDisplay.classList.add('hidden');
         answerDisplay.textContent = '';
+
+        const badge = document.getElementById('questionNumberBadge');
+        const numberSpan = document.getElementById('questionNumberSpan');
+        if (badge && numberSpan) {
+            numberSpan.textContent = currentGame.currentQuestion.n != null ? currentGame.currentQuestion.n : '?';
+            badge.classList.remove('hidden');
+        }
+
         updateCurrentQuestionCategoryDisplay();
 
         setDrawIdle(false);
@@ -2403,6 +2467,13 @@
             card.className = q.revealed ? 'history-card' : 'history-card history-card--hidden';
             if (idx === 0) card.classList.add('history-card--latest');
 
+            if (q.n != null) {
+                const numberEl = document.createElement('div');
+                numberEl.className = 'history-card__number';
+                numberEl.textContent = 'שאלה ' + q.n;
+                card.appendChild(numberEl);
+            }
+
             const questionEl = document.createElement('div');
             questionEl.className = 'history-card__question';
             questionEl.textContent = q.q;
@@ -2692,7 +2763,7 @@
             tr.className = 'pool-row' + (isDrawn ? ' pool-row--drawn' : '');
             tr.dataset.idx = idx;
             tr.innerHTML =
-                '<td>' + (idx + 1) + '</td>' +
+                '<td>' + (item.n != null ? item.n : (idx + 1)) + '</td>' +
                 '<td>' + escHtml(item.q) + '</td>' +
                 '<td>' + escHtml(item.cat || '') + '</td>' +
                 '<td dir="ltr">' + item.a + '</td>' +
@@ -2734,7 +2805,7 @@
         targetRow.className = 'inline-edit-row';
         targetRow.dataset.idx = idx;
         targetRow.innerHTML =
-            '<td>' + (idx + 1) + '</td>' +
+            '<td>' + (item.n != null ? item.n : (idx + 1)) + '</td>' +
             '<td><input type="text" id="editQ" value="' + escHtml(item.q) + '"></td>' +
             '<td>' +
                 '<select id="editCat">' + catOptions + '<option value="__new__">+ קטגוריה חדשה...</option></select>' +
@@ -2763,7 +2834,7 @@
         if (!a) { alert('תשובה לא יכולה להיות ריקה'); return; }
 
         const oldQ = questionBank[idx].q;
-        questionBank[idx] = { q, a, cat: cat || questionBank[idx].cat || '' };
+        questionBank[idx] = { q, a, cat: cat || questionBank[idx].cat || '', n: questionBank[idx].n };
 
         const gameIdx = currentGame.questions.findIndex(item => item.q === oldQ);
         if (gameIdx !== -1) currentGame.questions[gameIdx] = { ...questionBank[idx] };
@@ -2782,7 +2853,10 @@
     }
 
     function addQuestion() {
-        questionBank.push({ q: '', a: '', cat: '' });
+        const nextN = questionBank.length > 0
+            ? Math.max(...questionBank.map(q => (q.n != null ? q.n : 0))) + 1
+            : 1;
+        questionBank.push({ q: '', a: '', cat: '', n: nextN });
         syncQuestionBankSettings();
         const cats = getQuestionBankCategories();
         const sel = document.getElementById('poolFilterCat');
@@ -2868,7 +2942,7 @@
     }
 
     function saveQuestionBankCSV() {
-        const header = 'question,answer,category';
+        const header = 'n,question,answer,category';
         const configRows = [
             '# bingo-settings',
             'setting,value',
@@ -2879,10 +2953,11 @@
             ''
         ];
         const rows = questionBank.map(item => {
+            const n = item.n != null ? String(item.n) : '';
             const q = '"' + String(item.q).replace(/"/g, '""') + '"';
             const a = '"' + String(item.a).replace(/"/g, '""') + '"';
             const cat = '"' + String(item.cat || '').replace(/"/g, '""') + '"';
-            return q + ',' + a + ',' + cat;
+            return n + ',' + q + ',' + a + ',' + cat;
         });
         const csv = [...configRows, header, ...rows].join('\n');
         downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'question-bank.csv');

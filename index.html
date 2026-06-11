@@ -1598,7 +1598,7 @@
 
             <!-- Question Display -->
             <div class="question-display" id="questionDisplay">
-                <div class="question-number-badge hidden" id="questionNumberBadge">שאלה <span id="questionNumberSpan"></span></div>
+                <div class="question-number-badge hidden" id="questionNumberBadge" role="status" aria-live="polite">שאלה <span id="questionNumberSpan"></span></div>
                 <div class="current-question-category" id="currentQuestionCategory" role="status" aria-live="polite"></div>
                 <div id="questionText">לחץ על 'הגרל שאלה' כדי להתחיל! 🎲</div>
                 <div id="answerDisplay" class="answer-display hidden"></div>
@@ -1808,8 +1808,8 @@
         // Determine stable question number: honour explicit n if valid, else use 1-based position
         const rawN = item.n;
         let n;
-        if (typeof rawN === 'number' && Number.isFinite(rawN) && rawN >= 1) {
-            n = Math.round(rawN);
+        if (typeof rawN === 'number' && Number.isFinite(rawN) && Number.isInteger(rawN) && rawN >= 1) {
+            n = rawN;
         } else if (typeof rawN === 'string' && /^\d+$/.test(rawN.trim()) && parseInt(rawN.trim(), 10) >= 1) {
             n = parseInt(rawN.trim(), 10);
         } else {
@@ -2152,7 +2152,7 @@
         const badge = document.getElementById('questionNumberBadge');
         const numberSpan = document.getElementById('questionNumberSpan');
         if (badge && numberSpan) {
-            numberSpan.textContent = currentGame.currentQuestion.n != null ? currentGame.currentQuestion.n : '';
+            numberSpan.textContent = currentGame.currentQuestion.n != null ? currentGame.currentQuestion.n : '?';
             badge.classList.remove('hidden');
         }
 
